@@ -4,12 +4,15 @@ import { BarChart3, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import RequestQueue, { QueueItem } from './RequestQueue';
+import ResultFeedback from './ResultFeedback';
 
 const AttributeMapping = () => {
   const [selectedDatamart, setSelectedDatamart] = useState('');
   const [mappingResults, setMappingResults] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [hasResults, setHasResults] = useState(false);
+  const [queueItems, setQueueItems] = useState<QueueItem[]>([]);
 
   const datamarts = [
     'dm.sales',
@@ -17,12 +20,55 @@ const AttributeMapping = () => {
     'dm.products'
   ];
 
+  const addToQueue = (title: string): string => {
+    const id = Date.now().toString();
+    const newItem: QueueItem = {
+      id,
+      type: 'mapping',
+      status: 'pending',
+      title,
+      progress: 0,
+      startTime: new Date()
+    };
+    
+    setQueueItems(prev => [...prev, newItem]);
+    return id;
+  };
+
+  const updateQueueItem = (id: string, updates: Partial<QueueItem>) => {
+    setQueueItems(prev => prev.map(item => 
+      item.id === id ? { ...item, ...updates } : item
+    ));
+  };
+
+  const removeFromQueue = (id: string) => {
+    setQueueItems(prev => prev.filter(item => item.id !== id));
+  };
+
   const handleBuildMapping = async () => {
     if (!selectedDatamart) return;
     
+    const requestId = addToQueue(`Атрибутный маппинг для ${selectedDatamart}`);
     setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
+    setHasResults(false);
+    
+    // Обновляем статус на "выполняется"
+    updateQueueItem(requestId, { status: 'processing', startTime: new Date() });
+    
+    // Симуляция прогресса
+    const progressInterval = setInterval(() => {
+      updateQueueItem(requestId, { 
+        progress: Math.min(
+          queueItems.find(item => item.id === requestId)?.progress + 25 || 25, 
+          90
+        )
+      });
+    }, 500);
+    
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
       const mockResults = [
         {
           source: 'stg.sales.customer_id',
@@ -41,14 +87,59 @@ const AttributeMapping = () => {
         }
       ];
       
+      clearInterval(progressInterval);
+      updateQueueItem(requestId, { 
+        status: 'completed', 
+        progress: 100, 
+        endTime: new Date() 
+      });
+      
       setMappingResults(mockResults);
       setHasResults(true);
+      
+      // Удаляем из очереди через 3 секунды
+      setTimeout(() => removeFromQueue(requestId), 3000);
+      
+    } catch (error) {
+      clearInterval(progressInterval);
+      updateQueueItem(requestId, { 
+        status: 'failed', 
+        error: 'Ошибка при построении маппинга',
+        endTime: new Date()
+      });
+    } finally {
       setIsLoading(false);
-    }, 2000);
+    }
+  };
+
+  const handleRetryRequest = (id: string) => {
+    const item = queueItems.find(q => q.id === id);
+    if (item) {
+      updateQueueItem(id, { status: 'pending', progress: 0, error: undefined });
+      // Здесь можно повторить запрос
+    }
+  };
+
+  const handleCancelRequest = (id: string) => {
+    removeFromQueue(id);
+    if (isLoading) {
+      setIsLoading(false);
+    }
+  };
+
+  const handleFeedback = (rating: 'positive' | 'negative', comment?: string) => {
+    console.log('Feedback received:', { rating, comment, feature: 'attribute-mapping' });
+    // Здесь можно отправить данные на сервер
   };
 
   return (
     <div className="p-6 space-y-6">
+      <RequestQueue 
+        items={queueItems}
+        onRetry={handleRetryRequest}
+        onCancel={handleCancelRequest}
+      />
+
       {/* Control Panel */}
       <div className="dwh-card">
         <div className="space-y-4">
@@ -61,7 +152,7 @@ const AttributeMapping = () => {
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Выберите витрину" />
                 </SelectTrigger>
-                <SelectContent className="bg-white border border-gray-200 shadow-lg">
+                <SelectContent className="bg-white border border-gray-200 shadow-lg z-50">
                   {datamarts.map((dm) => (
                     <SelectItem key={dm} value={dm} className="hover:bg-dwh-light">
                       {dm}
@@ -104,26 +195,32 @@ const AttributeMapping = () => {
               <span className="ml-3 text-dwh-navy">Анализ структуры данных...</span>
             </div>
           ) : (
-            <div className="border rounded-lg overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-dwh-light">
-                    <TableHead>Источник (STG)</TableHead>
-                    <TableHead>Целевой атрибут</TableHead>
-                    <TableHead>Тип преобразования</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {mappingResults.map((result, index) => (
-                    <TableRow key={index}>
-                      <TableCell className="font-mono text-sm">{result.source}</TableCell>
-                      <TableCell className="font-mono text-sm">{result.target}</TableCell>
-                      <TableCell>{result.transformation}</TableCell>
+            <>
+              <div className="border rounded-lg overflow-hidden mb-4">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-dwh-light">
+                      <TableHead>Источник (STG)</TableHead>
+                      <TableHead>Целевой атрибут</TableHead>
+                      <TableHead>Тип преобразования</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                  </TableHeader>
+                  <TableBody>
+                    {mappingResults.map((result, index) => (
+                      <TableRow key={index}>
+                        <TableCell className="font-mono text-sm">{result.source}</TableCell>
+                        <TableCell className="font-mono text-sm">{result.target}</TableCell>
+                        <TableCell>{result.transformation}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {hasResults && (
+                <ResultFeedback onFeedback={handleFeedback} />
+              )}
+            </>
           )}
         </div>
       )}

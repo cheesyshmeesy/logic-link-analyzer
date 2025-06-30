@@ -1,16 +1,18 @@
 
 import React, { useState } from 'react';
-import { FileText, Download, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { FileText, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import RequestQueue, { QueueItem } from './RequestQueue';
+import ResultFeedback from './ResultFeedback';
 
 const ReverseEngineering = () => {
   const [selectedDatamart, setSelectedDatamart] = useState('');
   const [selectedTemplate, setSelectedTemplate] = useState('');
   const [generatedContent, setGeneratedContent] = useState('');
-  const [showFeedback, setShowFeedback] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [queueItems, setQueueItems] = useState<QueueItem[]>([]);
 
   const datamarts = [
     'dm.sales',
@@ -25,13 +27,54 @@ const ReverseEngineering = () => {
     'КХД'
   ];
 
+  const addToQueue = (title: string): string => {
+    const id = Date.now().toString();
+    const newItem: QueueItem = {
+      id,
+      type: 'reverse',
+      status: 'pending',
+      title,
+      progress: 0,
+      startTime: new Date()
+    };
+    
+    setQueueItems(prev => [...prev, newItem]);
+    return id;
+  };
+
+  const updateQueueItem = (id: string, updates: Partial<QueueItem>) => {
+    setQueueItems(prev => prev.map(item => 
+      item.id === id ? { ...item, ...updates } : item
+    ));
+  };
+
+  const removeFromQueue = (id: string) => {
+    setQueueItems(prev => prev.filter(item => item.id !== id));
+  };
+
   const handleGenerate = async () => {
     if (!selectedDatamart || !selectedTemplate) return;
     
+    const requestId = addToQueue(`Реверс-инжиниринг ${selectedDatamart} (${selectedTemplate})`);
     setIsLoading(true);
     
-    // Simulate API call
-    setTimeout(() => {
+    // Обновляем статус на "выполняется"
+    updateQueueItem(requestId, { status: 'processing', startTime: new Date() });
+    
+    // Симуляция прогресса
+    const progressInterval = setInterval(() => {
+      updateQueueItem(requestId, { 
+        progress: Math.min(
+          queueItems.find(item => item.id === requestId)?.progress + 20 || 20, 
+          90
+        )
+      });
+    }, 600);
+    
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      
       const content = `# Требования к витрине ${selectedDatamart}
 
 ## 1. Источники данных
@@ -68,10 +111,48 @@ const ReverseEngineering = () => {
 - Себестоимость (cost_amt)
 - Прибыль (profit_amt)`;
       
+      clearInterval(progressInterval);
+      updateQueueItem(requestId, { 
+        status: 'completed', 
+        progress: 100, 
+        endTime: new Date() 
+      });
+      
       setGeneratedContent(content);
-      setShowFeedback(true);
+      
+      // Удаляем из очереди через 3 секунды
+      setTimeout(() => removeFromQueue(requestId), 3000);
+      
+    } catch (error) {
+      clearInterval(progressInterval);
+      updateQueueItem(requestId, { 
+        status: 'failed', 
+        error: 'Ошибка при генерации требований',
+        endTime: new Date()
+      });
+    } finally {
       setIsLoading(false);
-    }, 3000);
+    }
+  };
+
+  const handleRetryRequest = (id: string) => {
+    const item = queueItems.find(q => q.id === id);
+    if (item) {
+      updateQueueItem(id, { status: 'pending', progress: 0, error: undefined });
+      // Здесь можно повторить запрос
+    }
+  };
+
+  const handleCancelRequest = (id: string) => {
+    removeFromQueue(id);
+    if (isLoading) {
+      setIsLoading(false);
+    }
+  };
+
+  const handleFeedback = (rating: 'positive' | 'negative', comment?: string) => {
+    console.log('Feedback received:', { rating, comment, feature: 'reverse-engineering' });
+    // Здесь можно отправить данные на сервер
   };
 
   const canGenerate = selectedDatamart && selectedTemplate;
@@ -79,6 +160,12 @@ const ReverseEngineering = () => {
 
   return (
     <div className="p-6 space-y-6">
+      <RequestQueue 
+        items={queueItems}
+        onRetry={handleRetryRequest}
+        onCancel={handleCancelRequest}
+      />
+
       {/* Control Panel */}
       <div className="dwh-card">
         <h2 className="text-lg font-semibold text-dwh-navy mb-4">SQL → Бизнес-требования</h2>
@@ -93,7 +180,7 @@ const ReverseEngineering = () => {
                 <SelectTrigger>
                   <SelectValue placeholder="Выберите витрину" />
                 </SelectTrigger>
-                <SelectContent className="bg-white border border-gray-200 shadow-lg">
+                <SelectContent className="bg-white border border-gray-200 shadow-lg z-50">
                   {datamarts.map((dm) => (
                     <SelectItem key={dm} value={dm} className="hover:bg-dwh-light">
                       {dm}
@@ -111,7 +198,7 @@ const ReverseEngineering = () => {
                 <SelectTrigger>
                   <SelectValue placeholder="Выберите шаблон" />
                 </SelectTrigger>
-                <SelectContent className="bg-white border border-gray-200 shadow-lg">
+                <SelectContent className="bg-white border border-gray-200 shadow-lg z-50">
                   {templates.map((template) => (
                     <SelectItem key={template} value={template} className="hover:bg-dwh-light">
                       {template}
@@ -170,20 +257,8 @@ const ReverseEngineering = () => {
                 />
               </div>
 
-              {showFeedback && (
-                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                  <p className="text-sm text-gray-700">Полезен ли этот ответ?</p>
-                  <div className="flex space-x-2">
-                    <Button variant="ghost" size="sm" className="text-green-600 hover:text-green-800 hover:bg-green-50">
-                      <ThumbsUp className="w-4 h-4 mr-1" />
-                      Полезно
-                    </Button>
-                    <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-800 hover:bg-red-50">
-                      <ThumbsDown className="w-4 h-4 mr-1" />
-                      Неточно
-                    </Button>
-                  </div>
-                </div>
+              {hasContent && (
+                <ResultFeedback onFeedback={handleFeedback} />
               )}
             </>
           )}
