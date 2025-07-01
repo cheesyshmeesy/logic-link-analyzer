@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import Header from '@/components/Header';
 import Navigation from '@/components/Navigation';
@@ -144,6 +143,11 @@ const Index = () => {
     console.log('Просмотр деталей:', id);
   };
 
+  const handleRateRequest = (id: string, rating: 'positive' | 'negative', comment?: string) => {
+    console.log('Оценка запроса:', { id, rating, comment });
+    // Здесь будет логика обновления рейтинга в базе данных
+  };
+
   const renderContent = () => {
     if (showRequestTabs) {
       return (
@@ -163,6 +167,7 @@ const Index = () => {
             onRetry={handleRetry}
             onCancel={handleCancel}
             onViewDetails={handleViewDetails}
+            onRateRequest={handleRateRequest}
           />
         </div>
       );

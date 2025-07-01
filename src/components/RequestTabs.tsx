@@ -12,6 +12,7 @@ interface RequestTabsProps {
   onRetry?: (id: string) => void;
   onCancel?: (id: string) => void;
   onViewDetails?: (id: string) => void;
+  onRateRequest?: (id: string, rating: 'positive' | 'negative', comment?: string) => void;
 }
 
 const RequestTabs: React.FC<RequestTabsProps> = ({
@@ -20,7 +21,8 @@ const RequestTabs: React.FC<RequestTabsProps> = ({
   systemLoad,
   onRetry,
   onCancel,
-  onViewDetails
+  onViewDetails,
+  onRateRequest
 }) => {
   const [activeTab, setActiveTab] = useState('queue');
   const activeQueueItems = queueItems.filter(item => 
@@ -54,6 +56,7 @@ const RequestTabs: React.FC<RequestTabsProps> = ({
           <RequestHistory 
             items={historyItems}
             onViewDetails={onViewDetails}
+            onRateRequest={onRateRequest}
           />
         </TabsContent>
       </Tabs>

@@ -1,8 +1,10 @@
 
-import React from 'react';
-import { CheckCircle, XCircle, AlertCircle, Eye, Download } from 'lucide-react';
+import React, { useState } from 'react';
+import { CheckCircle, XCircle, AlertCircle, Download, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 
 export interface HistoryItem {
   id: string;
@@ -20,9 +22,19 @@ export interface HistoryItem {
 interface RequestHistoryProps {
   items: HistoryItem[];
   onViewDetails?: (id: string) => void;
+  onRateRequest?: (id: string, rating: 'positive' | 'negative', comment?: string) => void;
 }
 
-const RequestHistory: React.FC<RequestHistoryProps> = ({ items, onViewDetails }) => {
+const RequestHistory: React.FC<RequestHistoryProps> = ({ 
+  items, 
+  onViewDetails,
+  onRateRequest 
+}) => {
+  const [selectedItem, setSelectedItem] = useState<HistoryItem | null>(null);
+  const [showRatingDialog, setShowRatingDialog] = useState(false);
+  const [ratingComment, setRatingComment] = useState('');
+  const [ratingType, setRatingType] = useState<'positive' | 'negative'>('positive');
+
   const getStatusIcon = (status: HistoryItem['status']) => {
     switch (status) {
       case 'completed':
@@ -50,13 +62,6 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({ items, onViewDetails })
     }
   };
 
-  const getRatingIcon = (rating?: 'positive' | 'negative') => {
-    if (!rating) return <span className="text-gray-400">—</span>;
-    return rating === 'positive' ? 
-      <span className="text-green-600">👍</span> : 
-      <span className="text-red-600">👎</span>;
-  };
-
   const formatDateTime = (date: Date) => {
     return new Intl.DateTimeFormat('ru-RU', {
       day: '2-digit',
@@ -72,6 +77,34 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({ items, onViewDetails })
     if (duration < 60) return `${duration}с`;
     if (duration < 3600) return `${Math.floor(duration / 60)}м ${duration % 60}с`;
     return `${Math.floor(duration / 3600)}ч ${Math.floor((duration % 3600) / 60)}м`;
+  };
+
+  const handleRowClick = (item: HistoryItem) => {
+    setSelectedItem(item);
+    onViewDetails?.(item.id);
+  };
+
+  const handleRateClick = (e: React.MouseEvent, item: HistoryItem, rating: 'positive' | 'negative') => {
+    e.stopPropagation(); // Prevent row click
+    setSelectedItem(item);
+    setRatingType(rating);
+    setRatingComment(item.comment || '');
+    
+    if (rating === 'negative' || item.rating !== rating) {
+      setShowRatingDialog(true);
+    } else {
+      // Direct positive rating or same rating
+      onRateRequest?.(item.id, rating);
+    }
+  };
+
+  const handleSubmitRating = () => {
+    if (selectedItem) {
+      onRateRequest?.(selectedItem.id, ratingType, ratingComment.trim() || undefined);
+    }
+    setShowRatingDialog(false);
+    setRatingComment('');
+    setSelectedItem(null);
   };
 
   if (items.length === 0) {
@@ -108,12 +141,15 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({ items, onViewDetails })
               <TableHead>Статус</TableHead>
               <TableHead>Длительность</TableHead>
               <TableHead>Оценка</TableHead>
-              <TableHead>Действия</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {items.map((item) => (
-              <TableRow key={item.id} className="hover:bg-gray-50">
+              <TableRow 
+                key={item.id} 
+                className="hover:bg-gray-50 cursor-pointer"
+                onClick={() => handleRowClick(item)}
+              >
                 <TableCell className="text-sm">
                   {formatDateTime(item.startTime)}
                 </TableCell>
@@ -134,25 +170,75 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({ items, onViewDetails })
                 <TableCell className="text-sm text-gray-600">
                   {getDuration(item.startTime, item.endTime)}
                 </TableCell>
-                <TableCell className="text-center">
-                  {getRatingIcon(item.rating)}
-                </TableCell>
                 <TableCell>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onViewDetails?.(item.id)}
-                    className="text-dwh-navy hover:bg-dwh-light"
-                  >
-                    <Eye className="w-4 h-4 mr-1" />
-                    Детали
-                  </Button>
+                  <div className="flex items-center space-x-1" onClick={(e) => e.stopPropagation()}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => handleRateClick(e, item, 'positive')}
+                      className={`p-1 h-auto ${
+                        item.rating === 'positive' 
+                          ? 'text-green-600 bg-green-50' 
+                          : 'text-gray-400 hover:text-green-600 hover:bg-green-50'
+                      }`}
+                    >
+                      <ThumbsUp className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => handleRateClick(e, item, 'negative')}
+                      className={`p-1 h-auto ${
+                        item.rating === 'negative' 
+                          ? 'text-red-600 bg-red-50' 
+                          : 'text-gray-400 hover:text-red-600 hover:bg-red-50'
+                      }`}
+                    >
+                      <ThumbsDown className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </div>
+
+      {/* Rating Dialog */}
+      <Dialog open={showRatingDialog} onOpenChange={setShowRatingDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {ratingType === 'positive' ? 'Положительная оценка' : 'Что можно улучшить?'}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Textarea
+              placeholder={
+                ratingType === 'positive' 
+                  ? 'Опишите, что вам понравилось (необязательно)...'
+                  : 'Опишите, что было неточно или что можно улучшить...'
+              }
+              value={ratingComment}
+              onChange={(e) => setRatingComment(e.target.value)}
+              className="min-h-[100px]"
+            />
+            <div className="flex justify-end space-x-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowRatingDialog(false)}
+              >
+                Отмена
+              </Button>
+              <Button
+                onClick={handleSubmitRating}
+              >
+                {ratingType === 'positive' ? 'Оценить' : 'Отправить'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
