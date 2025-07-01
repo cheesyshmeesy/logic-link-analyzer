@@ -1,7 +1,8 @@
 
 import React from 'react';
-import { Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { Clock, CheckCircle, XCircle, AlertCircle, Users } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
+import DetailedProgress, { ProgressStage } from './DetailedProgress';
 
 export interface QueueItem {
   id: string;
@@ -12,6 +13,10 @@ export interface QueueItem {
   startTime?: Date;
   endTime?: Date;
   error?: string;
+  estimatedWaitTime?: number;
+  queuePosition?: number;
+  stages?: ProgressStage[];
+  currentStage?: string;
 }
 
 interface RequestQueueProps {
@@ -21,7 +26,9 @@ interface RequestQueueProps {
 }
 
 const RequestQueue: React.FC<RequestQueueProps> = ({ items, onRetry, onCancel }) => {
-  if (items.length === 0) return null;
+  const activeItems = items.filter(item => 
+    item.status === 'pending' || item.status === 'processing'
+  );
 
   const getStatusIcon = (status: QueueItem['status']) => {
     switch (status) {
@@ -56,55 +63,102 @@ const RequestQueue: React.FC<RequestQueueProps> = ({ items, onRetry, onCancel })
     return `${duration}с`;
   };
 
+  const formatWaitTime = (seconds: number) => {
+    if (seconds < 60) return `~${seconds}с`;
+    if (seconds < 3600) return `~${Math.ceil(seconds / 60)}м`;
+    return `~${Math.ceil(seconds / 3600)}ч`;
+  };
+
+  if (activeItems.length === 0) {
+    return (
+      <div className="text-center py-8">
+        <Clock className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+        <p className="text-gray-500">Очередь запросов пуста</p>
+        <p className="text-sm text-gray-400 mt-1">
+          Новые запросы будут отображаться здесь
+        </p>
+      </div>
+    );
+  }
+
   return (
-    <div className="dwh-card mb-6">
-      <h3 className="text-lg font-semibold text-dwh-navy mb-4">Очередь запросов</h3>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold text-dwh-navy">
+          Активные запросы ({activeItems.length})
+        </h3>
+        <div className="flex items-center space-x-2 text-sm text-gray-600">
+          <Users className="w-4 h-4" />
+          <span>Нагрузка системы: средняя</span>
+        </div>
+      </div>
+
       <div className="space-y-3">
-        {items.map((item) => (
-          <div key={item.id} className="border rounded-lg p-4 bg-white">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center space-x-3">
-                {getStatusIcon(item.status)}
-                <div>
-                  <h4 className="font-medium text-sm">{item.title}</h4>
-                  <p className="text-xs text-gray-500">
-                    {getStatusText(item.status)}
-                    {item.startTime && ` • ${formatDuration(item.startTime, item.endTime)}`}
-                  </p>
+        {activeItems.map((item, index) => (
+          <div key={item.id} className="space-y-4">
+            <div className="border rounded-lg p-4 bg-white">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center space-x-3">
+                  {getStatusIcon(item.status)}
+                  <div>
+                    <h4 className="font-medium text-sm">{item.title}</h4>
+                    <div className="flex items-center space-x-4 text-xs text-gray-500">
+                      <span>{getStatusText(item.status)}</span>
+                      {item.startTime && (
+                        <span>• {formatDuration(item.startTime, item.endTime)}</span>
+                      )}
+                      {item.status === 'pending' && item.queuePosition && (
+                        <span>• Позиция в очереди: {item.queuePosition}</span>
+                      )}
+                      {item.status === 'pending' && item.estimatedWaitTime && (
+                        <span>• Ожидание: {formatWaitTime(item.estimatedWaitTime)}</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  {item.status === 'failed' && onRetry && (
+                    <button
+                      onClick={() => onRetry(item.id)}
+                      className="text-xs px-2 py-1 bg-blue-100 text-blue-600 rounded hover:bg-blue-200"
+                    >
+                      Повторить
+                    </button>
+                  )}
+                  {(item.status === 'pending' || item.status === 'processing') && onCancel && (
+                    <button
+                      onClick={() => onCancel(item.id)}
+                      className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded hover:bg-gray-200"
+                    >
+                      Отменить
+                    </button>
+                  )}
                 </div>
               </div>
               
-              <div className="flex items-center space-x-2">
-                {item.status === 'failed' && onRetry && (
-                  <button
-                    onClick={() => onRetry(item.id)}
-                    className="text-xs px-2 py-1 bg-blue-100 text-blue-600 rounded hover:bg-blue-200"
-                  >
-                    Повторить
-                  </button>
-                )}
-                {(item.status === 'pending' || item.status === 'processing') && onCancel && (
-                  <button
-                    onClick={() => onCancel(item.id)}
-                    className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded hover:bg-gray-200"
-                  >
-                    Отменить
-                  </button>
-                )}
-              </div>
+              {item.status === 'processing' && !item.stages && (
+                <div className="mt-2">
+                  <Progress value={item.progress} className="h-2" />
+                  <p className="text-xs text-gray-500 mt-1">{item.progress}% завершено</p>
+                </div>
+              )}
+              
+              {item.status === 'failed' && item.error && (
+                <div className="mt-2 p-2 bg-red-50 rounded border border-red-200">
+                  <p className="text-xs text-red-600">{item.error}</p>
+                </div>
+              )}
             </div>
-            
-            {item.status === 'processing' && (
-              <div className="mt-2">
-                <Progress value={item.progress} className="h-2" />
-                <p className="text-xs text-gray-500 mt-1">{item.progress}% завершено</p>
-              </div>
-            )}
-            
-            {item.status === 'failed' && item.error && (
-              <div className="mt-2 p-2 bg-red-50 rounded border border-red-200">
-                <p className="text-xs text-red-600">{item.error}</p>
-              </div>
+
+            {/* Детальный прогресс с этапами */}
+            {item.stages && (
+              <DetailedProgress
+                stages={item.stages}
+                currentStage={item.currentStage}
+                overallProgress={item.progress}
+                isActive={item.status === 'processing'}
+              />
             )}
           </div>
         ))}

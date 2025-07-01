@@ -1,11 +1,13 @@
-
 import React, { useState } from 'react';
 import { BarChart3, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import RequestQueue, { QueueItem } from './RequestQueue';
+import RequestTabs from './RequestTabs';
 import ResultFeedback from './ResultFeedback';
+import { QueueItem } from './RequestQueue';
+import { HistoryItem } from './RequestHistory';
+import { ProgressStage } from './DetailedProgress';
 
 const AttributeMapping = () => {
   const [selectedDatamart, setSelectedDatamart] = useState('');
@@ -13,6 +15,7 @@ const AttributeMapping = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [hasResults, setHasResults] = useState(false);
   const [queueItems, setQueueItems] = useState<QueueItem[]>([]);
+  const [historyItems, setHistoryItems] = useState<HistoryItem[]>([]);
 
   const datamarts = [
     'dm.sales',
@@ -20,15 +23,52 @@ const AttributeMapping = () => {
     'dm.products'
   ];
 
+  const createProgressStages = (): ProgressStage[] => [
+    {
+      id: 'analysis',
+      name: 'Анализ структуры данных',
+      description: 'Изучение схемы исходных данных и целевой витрины',
+      status: 'pending',
+      progress: 0
+    },
+    {
+      id: 'mapping',
+      name: 'Построение маппинга',
+      description: 'Сопоставление атрибутов источника и цели',
+      status: 'pending',
+      progress: 0
+    },
+    {
+      id: 'validation',
+      name: 'Валидация правил',
+      description: 'Проверка корректности преобразований',
+      status: 'pending',
+      progress: 0
+    },
+    {
+      id: 'generation',
+      name: 'Генерация результата',
+      description: 'Формирование финального маппинга',
+      status: 'pending',
+      progress: 0
+    }
+  ];
+
   const addToQueue = (title: string): string => {
     const id = Date.now().toString();
+    const queueLength = queueItems.filter(item => item.status === 'pending').length;
+    
     const newItem: QueueItem = {
       id,
       type: 'mapping',
       status: 'pending',
       title,
       progress: 0,
-      startTime: new Date()
+      startTime: new Date(),
+      queuePosition: queueLength + 1,
+      estimatedWaitTime: queueLength * 30, // 30 секунд на запрос
+      stages: createProgressStages(),
+      currentStage: 'analysis'
     };
     
     setQueueItems(prev => [...prev, newItem]);
@@ -41,8 +81,72 @@ const AttributeMapping = () => {
     ));
   };
 
+  const updateStage = (requestId: string, stageId: string, updates: Partial<ProgressStage>) => {
+    setQueueItems(prev => prev.map(item => {
+      if (item.id === requestId && item.stages) {
+        return {
+          ...item,
+          stages: item.stages.map(stage => 
+            stage.id === stageId ? { ...stage, ...updates } : stage
+          )
+        };
+      }
+      return item;
+    }));
+  };
+
   const removeFromQueue = (id: string) => {
+    const item = queueItems.find(q => q.id === id);
+    if (item && (item.status === 'completed' || item.status === 'failed')) {
+      // Перемещаем в историю
+      const historyItem: HistoryItem = {
+        id: item.id,
+        type: item.type,
+        title: item.title,
+        status: item.status === 'completed' ? 'completed' : 'failed',
+        startTime: item.startTime!,
+        endTime: item.endTime!,
+        error: item.error,
+        result: item.status === 'completed' ? mappingResults : undefined
+      };
+      setHistoryItems(prev => [historyItem, ...prev]);
+    }
+    
     setQueueItems(prev => prev.filter(item => item.id !== id));
+  };
+
+  const simulateStageProgress = async (requestId: string) => {
+    const stages = ['analysis', 'mapping', 'validation', 'generation'];
+    
+    for (let i = 0; i < stages.length; i++) {
+      const stageId = stages[i];
+      const isLastStage = i === stages.length - 1;
+      
+      // Устанавливаем текущий этап
+      updateQueueItem(requestId, { currentStage: stageId });
+      updateStage(requestId, stageId, { status: 'processing', progress: 0 });
+      
+      // Симулируем прогресс этапа
+      for (let progress = 0; progress <= 100; progress += 20) {
+        await new Promise(resolve => setTimeout(resolve, 200));
+        updateStage(requestId, stageId, { progress });
+        
+        // Обновляем общий прогресс
+        const overallProgress = Math.floor((i * 100 + progress) / stages.length);
+        updateQueueItem(requestId, { progress: overallProgress });
+      }
+      
+      // Завершаем этап
+      updateStage(requestId, stageId, { 
+        status: 'completed', 
+        progress: 100,
+        duration: Math.floor(Math.random() * 5) + 2 
+      });
+      
+      if (!isLastStage) {
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
+    }
   };
 
   const handleBuildMapping = async () => {
@@ -55,19 +159,12 @@ const AttributeMapping = () => {
     // Обновляем статус на "выполняется"
     updateQueueItem(requestId, { status: 'processing', startTime: new Date() });
     
-    // Симуляция прогресса
-    const progressInterval = setInterval(() => {
-      updateQueueItem(requestId, { 
-        progress: Math.min(
-          queueItems.find(item => item.id === requestId)?.progress + 25 || 25, 
-          90
-        )
-      });
-    }, 500);
-    
     try {
+      // Симулируем прогресс по этапам
+      await simulateStageProgress(requestId);
+      
       // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise(resolve => setTimeout(resolve, 500));
       
       const mockResults = [
         {
@@ -87,7 +184,6 @@ const AttributeMapping = () => {
         }
       ];
       
-      clearInterval(progressInterval);
       updateQueueItem(requestId, { 
         status: 'completed', 
         progress: 100, 
@@ -101,7 +197,6 @@ const AttributeMapping = () => {
       setTimeout(() => removeFromQueue(requestId), 3000);
       
     } catch (error) {
-      clearInterval(progressInterval);
       updateQueueItem(requestId, { 
         status: 'failed', 
         error: 'Ошибка при построении маппинга',
@@ -115,8 +210,13 @@ const AttributeMapping = () => {
   const handleRetryRequest = (id: string) => {
     const item = queueItems.find(q => q.id === id);
     if (item) {
-      updateQueueItem(id, { status: 'pending', progress: 0, error: undefined });
-      // Здесь можно повторить запрос
+      updateQueueItem(id, { 
+        status: 'pending', 
+        progress: 0, 
+        error: undefined,
+        stages: createProgressStages(),
+        currentStage: 'analysis'
+      });
     }
   };
 
@@ -129,15 +229,30 @@ const AttributeMapping = () => {
 
   const handleFeedback = (rating: 'positive' | 'negative', comment?: string) => {
     console.log('Feedback received:', { rating, comment, feature: 'attribute-mapping' });
-    // Здесь можно отправить данные на сервер
+    
+    // Обновляем последний элемент в истории с оценкой
+    if (historyItems.length > 0) {
+      const latestItem = historyItems[0];
+      setHistoryItems(prev => prev.map(item => 
+        item.id === latestItem.id 
+          ? { ...item, rating, comment }
+          : item
+      ));
+    }
+  };
+
+  const handleViewDetails = (id: string) => {
+    console.log('View details for request:', id);
   };
 
   return (
     <div className="p-6 space-y-6">
-      <RequestQueue 
-        items={queueItems}
+      <RequestTabs 
+        queueItems={queueItems}
+        historyItems={historyItems}
         onRetry={handleRetryRequest}
         onCancel={handleCancelRequest}
+        onViewDetails={handleViewDetails}
       />
 
       {/* Control Panel */}
