@@ -26,7 +26,7 @@ const Header: React.FC<HeaderProps> = ({
         </div>
         
         <div className="flex items-center space-x-4">
-          {/* Кнопки для очереди и истории запросов */}
+          {/* Кнопки без счетчиков */}
           <div className="flex items-center space-x-2">
             <Button
               variant="outline"
@@ -36,11 +36,6 @@ const Header: React.FC<HeaderProps> = ({
             >
               <Clock className="w-4 h-4" />
               <span>Очередь запросов</span>
-              {queueCount > 0 && (
-                <span className="bg-dwh-cyan text-white rounded-full px-2 py-0.5 text-xs">
-                  {queueCount}
-                </span>
-              )}
             </Button>
             
             <Button
@@ -51,9 +46,6 @@ const Header: React.FC<HeaderProps> = ({
             >
               <History className="w-4 h-4" />
               <span>История запросов</span>
-              <span className="bg-gray-200 text-gray-600 rounded-full px-2 py-0.5 text-xs">
-                {historyCount}
-              </span>
             </Button>
           </div>
           

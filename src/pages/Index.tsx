@@ -6,14 +6,23 @@ import AttributeMapping from '@/components/AttributeMapping';
 import ReverseEngineering from '@/components/ReverseEngineering';
 import LogicalModel from '@/components/LogicalModel';
 import RequestTabs from '@/components/RequestTabs';
-import { QueueItem } from '@/components/RequestQueue';
+import { QueueItem, SystemLoad } from '@/components/RequestQueue';
 import { HistoryItem } from '@/components/RequestHistory';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState('mapping');
   const [showRequestTabs, setShowRequestTabs] = useState(false);
 
-  // Мок данные для очереди запросов
+  // Мок данные для системной загруженности
+  const mockSystemLoad: SystemLoad = {
+    level: 'medium',
+    activeRequests: 12,
+    averageWaitTime: 180,
+    khdStatus: 'online',
+    llmStatus: 'slow'
+  };
+
+  // Мок данные для очереди запросов (включая запросы других пользователей)
   const mockQueueItems: QueueItem[] = [
     {
       id: '1',
@@ -46,7 +55,9 @@ const Index = () => {
           progress: 0
         }
       ],
-      currentStage: 'mapping'
+      currentStage: 'mapping',
+      userName: 'Иван Иванов',
+      isCurrentUser: true
     },
     {
       id: '2',
@@ -55,7 +66,31 @@ const Index = () => {
       title: 'Реверс-инжиниринг схемы orders',
       progress: 0,
       queuePosition: 2,
-      estimatedWaitTime: 180
+      estimatedWaitTime: 180,
+      userName: 'Петр Петров',
+      isCurrentUser: false
+    },
+    {
+      id: '3',
+      type: 'mapping',
+      status: 'failed',
+      title: 'Атрибутный маппинг для таблицы products',
+      progress: 0,
+      error: 'Тайм-аут подключения к КХД',
+      errorType: 'khd_timeout',
+      userName: 'Анна Сидорова',
+      isCurrentUser: false
+    },
+    {
+      id: '4',
+      type: 'reverse',
+      status: 'pending',
+      title: 'Реверс-инжиниринг схемы transactions',
+      progress: 0,
+      queuePosition: 4,
+      estimatedWaitTime: 420,
+      userName: 'Иван Иванов',
+      isCurrentUser: true
     }
   ];
 
@@ -124,6 +159,7 @@ const Index = () => {
           <RequestTabs
             queueItems={mockQueueItems}
             historyItems={mockHistoryItems}
+            systemLoad={mockSystemLoad}
             onRetry={handleRetry}
             onCancel={handleCancel}
             onViewDetails={handleViewDetails}

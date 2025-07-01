@@ -2,12 +2,13 @@
 import React, { useState } from 'react';
 import { Clock, History } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import RequestQueue, { QueueItem } from './RequestQueue';
+import RequestQueue, { QueueItem, SystemLoad } from './RequestQueue';
 import RequestHistory, { HistoryItem } from './RequestHistory';
 
 interface RequestTabsProps {
   queueItems: QueueItem[];
   historyItems: HistoryItem[];
+  systemLoad: SystemLoad;
   onRetry?: (id: string) => void;
   onCancel?: (id: string) => void;
   onViewDetails?: (id: string) => void;
@@ -16,6 +17,7 @@ interface RequestTabsProps {
 const RequestTabs: React.FC<RequestTabsProps> = ({
   queueItems,
   historyItems,
+  systemLoad,
   onRetry,
   onCancel,
   onViewDetails
@@ -32,24 +34,17 @@ const RequestTabs: React.FC<RequestTabsProps> = ({
           <TabsTrigger value="queue" className="flex items-center space-x-2">
             <Clock className="w-4 h-4" />
             <span>Очередь запросов</span>
-            {activeQueueItems.length > 0 && (
-              <span className="bg-dwh-cyan text-white rounded-full px-2 py-0.5 text-xs ml-1">
-                {activeQueueItems.length}
-              </span>
-            )}
           </TabsTrigger>
           <TabsTrigger value="history" className="flex items-center space-x-2">
             <History className="w-4 h-4" />
             <span>История запросов</span>
-            <span className="bg-gray-200 text-gray-600 rounded-full px-2 py-0.5 text-xs ml-1">
-              {historyItems.length}
-            </span>
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="queue" className="mt-0">
           <RequestQueue 
             items={queueItems}
+            systemLoad={systemLoad}
             onRetry={onRetry}
             onCancel={onCancel}
           />
