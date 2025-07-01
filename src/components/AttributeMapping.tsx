@@ -3,7 +3,6 @@ import { BarChart3, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import RequestTabs from './RequestTabs';
 import ResultFeedback from './ResultFeedback';
 import { QueueItem, SystemLoad } from './RequestQueue';
 import { HistoryItem } from './RequestHistory';
@@ -256,15 +255,6 @@ const AttributeMapping = () => {
 
   return (
     <div className="p-6 space-y-6">
-      <RequestTabs 
-        queueItems={queueItems}
-        historyItems={historyItems}
-        systemLoad={mockSystemLoad}
-        onRetry={handleRetryRequest}
-        onCancel={handleCancelRequest}
-        onViewDetails={handleViewDetails}
-      />
-
       {/* Control Panel */}
       <div className="dwh-card">
         <div className="space-y-4">

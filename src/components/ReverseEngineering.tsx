@@ -3,7 +3,6 @@ import { Search, Download, FileText, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import RequestTabs from './RequestTabs';
 import ResultFeedback from './ResultFeedback';
 import { QueueItem, SystemLoad } from './RequestQueue';
 import { HistoryItem } from './RequestHistory';
@@ -16,17 +15,6 @@ const ReverseEngineering = () => {
   const [generatedRequirements, setGeneratedRequirements] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [hasResults, setHasResults] = useState(false);
-  const [queueItems, setQueueItems] = useState<QueueItem[]>([]);
-  const [historyItems, setHistoryItems] = useState<HistoryItem[]>([]);
-
-  // Mock system load data
-  const mockSystemLoad: SystemLoad = {
-    level: 'medium',
-    activeRequests: 12,
-    averageWaitTime: 180,
-    khdStatus: 'online',
-    llmStatus: 'online'
-  };
 
   const datamarts = [
     'dm.sales',
@@ -70,113 +58,14 @@ const ReverseEngineering = () => {
     }
   ];
 
-  const addToQueue = (title: string): string => {
-    const id = Date.now().toString();
-    const queueLength = queueItems.filter(item => item.status === 'pending').length;
-    
-    const newItem: QueueItem = {
-      id,
-      type: 'reverse',
-      status: 'pending',
-      title,
-      progress: 0,
-      startTime: new Date(),
-      queuePosition: queueLength + 1,
-      estimatedWaitTime: queueLength * 45, // 45 секунд на запрос (дольше чем маппинг)
-      stages: createProgressStages(),
-      currentStage: 'dataAnalysis'
-    };
-    
-    setQueueItems(prev => [...prev, newItem]);
-    return id;
-  };
-
-  const updateQueueItem = (id: string, updates: Partial<QueueItem>) => {
-    setQueueItems(prev => prev.map(item => 
-      item.id === id ? { ...item, ...updates } : item
-    ));
-  };
-
-  const updateStage = (requestId: string, stageId: string, updates: Partial<ProgressStage>) => {
-    setQueueItems(prev => prev.map(item => {
-      if (item.id === requestId && item.stages) {
-        return {
-          ...item,
-          stages: item.stages.map(stage => 
-            stage.id === stageId ? { ...stage, ...updates } : stage
-          )
-        };
-      }
-      return item;
-    }));
-  };
-
-  const removeFromQueue = (id: string) => {
-    const item = queueItems.find(q => q.id === id);
-    if (item && (item.status === 'completed' || item.status === 'failed')) {
-      const historyItem: HistoryItem = {
-        id: item.id,
-        type: item.type,
-        title: item.title,
-        status: item.status === 'completed' ? 'completed' : 'failed',
-        startTime: item.startTime!,
-        endTime: item.endTime!,
-        error: item.error,
-        result: item.status === 'completed' ? generatedRequirements : undefined
-      };
-      setHistoryItems(prev => [historyItem, ...prev]);
-    }
-    
-    setQueueItems(prev => prev.filter(item => item.id !== id));
-  };
-
-  const simulateStageProgress = async (requestId: string) => {
-    const stages = ['dataAnalysis', 'patternRecognition', 'requirementsExtraction', 'documentation'];
-    
-    for (let i = 0; i < stages.length; i++) {
-      const stageId = stages[i];
-      const isLastStage = i === stages.length - 1;
-      
-      updateQueueItem(requestId, { currentStage: stageId });
-      updateStage(requestId, stageId, { status: 'processing', progress: 0 });
-      
-      // Разная скорость для разных этапов
-      const stepDelay = stageId === 'requirementsExtraction' ? 300 : 200;
-      
-      for (let progress = 0; progress <= 100; progress += 25) {
-        await new Promise(resolve => setTimeout(resolve, stepDelay));
-        updateStage(requestId, stageId, { progress });
-        
-        const overallProgress = Math.floor((i * 100 + progress) / stages.length);
-        updateQueueItem(requestId, { progress: overallProgress });
-      }
-      
-      // Завершаем этап
-      updateStage(requestId, stageId, { 
-        status: 'completed', 
-        progress: 100,
-        duration: Math.floor(Math.random() * 8) + 3 
-      });
-      
-      if (!isLastStage) {
-        await new Promise(resolve => setTimeout(resolve, 400));
-      }
-    }
-  };
-
   const handleGenerateRequirements = async () => {
     if (!selectedDatamart || !selectedTemplate) return;
 
-    const requestId = addToQueue(`Реверс-инжиниринг для ${selectedDatamart}`);
     setIsLoading(true);
     setHasResults(false);
 
-    updateQueueItem(requestId, { status: 'processing', startTime: new Date() });
-
     try {
-      await simulateStageProgress(requestId);
-      
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 3000));
 
       const mockRequirements = `# ${selectedTemplate}
 
@@ -200,63 +89,18 @@ const ReverseEngineering = () => {
 - ERP система для продуктов
 - Транзакционная система для операций`;
 
-      updateQueueItem(requestId, { 
-        status: 'completed', 
-        progress: 100, 
-        endTime: new Date() 
-      });
-
       setGeneratedRequirements(mockRequirements);
       setHasResults(true);
 
-      setTimeout(() => removeFromQueue(requestId), 3000);
-
     } catch (error) {
-      updateQueueItem(requestId, { 
-        status: 'failed', 
-        error: 'Ошибка при генерации требований',
-        endTime: new Date()
-      });
+      console.error('Error generating requirements:', error);
     } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleRetryRequest = (id: string) => {
-    const item = queueItems.find(q => q.id === id);
-    if (item) {
-      updateQueueItem(id, { 
-        status: 'pending', 
-        progress: 0, 
-        error: undefined,
-        stages: createProgressStages(),
-        currentStage: 'dataAnalysis'
-      });
-    }
-  };
-
-  const handleCancelRequest = (id: string) => {
-    removeFromQueue(id);
-    if (isLoading) {
       setIsLoading(false);
     }
   };
 
   const handleFeedback = (rating: 'positive' | 'negative', comment?: string) => {
     console.log('Feedback received:', { rating, comment, feature: 'reverse-engineering' });
-    
-    if (historyItems.length > 0) {
-      const latestItem = historyItems[0];
-      setHistoryItems(prev => prev.map(item => 
-        item.id === latestItem.id 
-          ? { ...item, rating, comment }
-          : item
-      ));
-    }
-  };
-
-  const handleViewDetails = (id: string) => {
-    console.log('View details for request:', id);
   };
 
   const handleClearRequirements = () => {
@@ -267,15 +111,6 @@ const ReverseEngineering = () => {
 
   return (
     <div className="p-6 space-y-6">
-      <RequestTabs 
-        queueItems={queueItems}
-        historyItems={historyItems}
-        systemLoad={mockSystemLoad}
-        onRetry={handleRetryRequest}
-        onCancel={handleCancelRequest}
-        onViewDetails={handleViewDetails}
-      />
-
       {/* Control Panel */}
       <div className="dwh-card">
         <div className="space-y-4">
