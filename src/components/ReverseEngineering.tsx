@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import RequestTabs from './RequestTabs';
 import ResultFeedback from './ResultFeedback';
-import { QueueItem } from './RequestQueue';
+import { QueueItem, SystemLoad } from './RequestQueue';
 import { HistoryItem } from './RequestHistory';
 import { ProgressStage } from './DetailedProgress';
 
@@ -18,6 +18,15 @@ const ReverseEngineering = () => {
   const [hasResults, setHasResults] = useState(false);
   const [queueItems, setQueueItems] = useState<QueueItem[]>([]);
   const [historyItems, setHistoryItems] = useState<HistoryItem[]>([]);
+
+  // Mock system load data
+  const mockSystemLoad: SystemLoad = {
+    level: 'medium',
+    activeRequests: 12,
+    averageWaitTime: 180,
+    khdStatus: 'online',
+    llmStatus: 'online'
+  };
 
   const datamarts = [
     'dm.sales',
@@ -261,6 +270,7 @@ const ReverseEngineering = () => {
       <RequestTabs 
         queueItems={queueItems}
         historyItems={historyItems}
+        systemLoad={mockSystemLoad}
         onRetry={handleRetryRequest}
         onCancel={handleCancelRequest}
         onViewDetails={handleViewDetails}
