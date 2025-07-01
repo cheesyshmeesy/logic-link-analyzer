@@ -1,8 +1,19 @@
 
 import React from 'react';
-import { Database, User, Bell } from 'lucide-react';
+import { Database, User, Bell, History, Clock } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
-const Header = () => {
+interface HeaderProps {
+  onShowRequestTabs?: () => void;
+  queueCount?: number;
+  historyCount?: number;
+}
+
+const Header: React.FC<HeaderProps> = ({ 
+  onShowRequestTabs, 
+  queueCount = 0, 
+  historyCount = 0 
+}) => {
   return (
     <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
       <div className="flex items-center justify-between">
@@ -15,9 +26,35 @@ const Header = () => {
         </div>
         
         <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-2 bg-dwh-light px-3 py-2 rounded-md">
-            <Bell className="w-4 h-4 text-dwh-navy" />
-            <span className="text-sm font-medium text-dwh-navy">Очередь запросов: 1</span>
+          {/* Кнопки для очереди и истории запросов */}
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onShowRequestTabs}
+              className="flex items-center space-x-2"
+            >
+              <Clock className="w-4 h-4" />
+              <span>Очередь запросов</span>
+              {queueCount > 0 && (
+                <span className="bg-dwh-cyan text-white rounded-full px-2 py-0.5 text-xs">
+                  {queueCount}
+                </span>
+              )}
+            </Button>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onShowRequestTabs}
+              className="flex items-center space-x-2"
+            >
+              <History className="w-4 h-4" />
+              <span>История запросов</span>
+              <span className="bg-gray-200 text-gray-600 rounded-full px-2 py-0.5 text-xs">
+                {historyCount}
+              </span>
+            </Button>
           </div>
           
           <div className="flex items-center space-x-2">
