@@ -1,7 +1,14 @@
 
 import React from 'react';
-import { Database, User, Bell, History, Clock } from 'lucide-react';
+import { Database, User, Bell, History, Clock, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 interface HeaderProps {
   onShowRequestTabs?: () => void;
@@ -14,6 +21,11 @@ const Header: React.FC<HeaderProps> = ({
   queueCount = 0, 
   historyCount = 0 
 }) => {
+  const handleLogout = () => {
+    console.log('Выход из аккаунта');
+    // Здесь будет логика выхода из системы
+  };
+
   return (
     <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
       <div className="flex items-center justify-between">
@@ -49,13 +61,32 @@ const Header: React.FC<HeaderProps> = ({
             </Button>
           </div>
           
-          <div className="flex items-center space-x-2">
-            <User className="w-8 h-8 p-1 bg-dwh-navy text-white rounded-full" />
-            <div className="text-right">
-              <p className="text-sm font-medium text-dwh-navy">Иван Иванов</p>
-              <p className="text-xs text-gray-600">Аналитик</p>
-            </div>
-          </div>
+          {/* Профиль пользователя с выпадающим меню */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="flex items-center space-x-2 hover:bg-dwh-light">
+                <User className="w-8 h-8 p-1 bg-dwh-navy text-white rounded-full" />
+                <div className="text-right">
+                  <p className="text-sm font-medium text-dwh-navy">Иван Иванов</p>
+                  <p className="text-xs text-gray-600">Аналитик</p>
+                </div>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem className="flex items-center space-x-2">
+                <User className="w-4 h-4" />
+                <span>Профиль</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem 
+                onClick={handleLogout}
+                className="flex items-center space-x-2 text-red-600 focus:text-red-600"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Выйти</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </header>

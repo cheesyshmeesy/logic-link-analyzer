@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import Header from '@/components/Header';
 import Navigation from '@/components/Navigation';
@@ -151,28 +152,40 @@ const Index = () => {
   const renderContent = () => {
     if (showRequestTabs) {
       return (
-        <div className="p-6">
-          <div className="mb-4">
-            <button
-              onClick={() => setShowRequestTabs(false)}
-              className="text-dwh-navy hover:text-dwh-cyan text-sm font-medium"
-            >
-              ← Вернуться к функциям
-            </button>
+        <div className="bg-white min-h-screen">
+          <div className="max-w-7xl mx-auto p-6">
+            <div className="mb-4">
+              <button
+                onClick={() => setShowRequestTabs(false)}
+                className="text-dwh-navy hover:text-dwh-cyan text-sm font-medium"
+              >
+                ← Вернуться к функциям
+              </button>
+            </div>
+            <RequestTabs
+              queueItems={mockQueueItems}
+              historyItems={mockHistoryItems}
+              systemLoad={mockSystemLoad}
+              onRetry={handleRetry}
+              onCancel={handleCancel}
+              onViewDetails={handleViewDetails}
+              onRateRequest={handleRateRequest}
+            />
           </div>
-          <RequestTabs
-            queueItems={mockQueueItems}
-            historyItems={mockHistoryItems}
-            systemLoad={mockSystemLoad}
-            onRetry={handleRetry}
-            onCancel={handleCancel}
-            onViewDetails={handleViewDetails}
-            onRateRequest={handleRateRequest}
-          />
         </div>
       );
     }
 
+    return (
+      <div className="bg-white min-h-screen">
+        <div className="max-w-7xl mx-auto">
+          {renderMainContent()}
+        </div>
+      </div>
+    );
+  };
+
+  const renderMainContent = () => {
     switch (activeTab) {
       case 'mapping':
         return <AttributeMapping />;
@@ -186,7 +199,7 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-dwh-light">
+    <div className="min-h-screen bg-white">
       <Header 
         onShowRequestTabs={() => setShowRequestTabs(true)}
         queueCount={activeQueueItems.length}
@@ -195,7 +208,7 @@ const Index = () => {
       {!showRequestTabs && (
         <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
       )}
-      <main className="max-w-7xl mx-auto">
+      <main>
         {renderContent()}
       </main>
     </div>
