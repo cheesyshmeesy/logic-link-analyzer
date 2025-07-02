@@ -7,33 +7,33 @@
 
 @layer base {
   :root {
-    --background: 242 242 242; /* #F2F2F2 */
-    --foreground: 2 48 89; /* #023059 */
+    --background: 0 0% 95%; /* #F2F2F2 в HSL */
+    --foreground: 210 65% 18%; /* #023059 в HSL */
 
     --card: 0 0% 100%;
-    --card-foreground: 2 48 89;
+    --card-foreground: 210 65% 18%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 2 48 89;
+    --popover-foreground: 210 65% 18%;
 
-    --primary: 2 48 89; /* #023059 - Corporate Navy */
+    --primary: 210 65% 18%; /* #023059 - Corporate Navy */
     --primary-foreground: 0 0% 98%;
 
-    --secondary: 5 199 242; /* #05C7F2 - Corporate Cyan */
-    --secondary-foreground: 2 48 89;
+    --secondary: 191 95% 47%; /* #05C7F2 - Corporate Cyan */
+    --secondary-foreground: 210 65% 18%;
 
-    --muted: 242 242 242;
-    --muted-foreground: 2 48 89;
+    --muted: 0 0% 95%; /* #F2F2F2 */
+    --muted-foreground: 210 20% 40%;
 
-    --accent: 5 199 242;
-    --accent-foreground: 2 48 89;
+    --accent: 191 95% 47%; /* #05C7F2 */
+    --accent-foreground: 210 65% 18%;
 
-    --destructive: 0 84.2% 60.2%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 2 48 89;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 210 65% 18%;
 
     --radius: 0.5rem;
   }
@@ -45,7 +45,7 @@
   }
 
   body {
-    @apply bg-dwh-light text-dwh-navy font-sans;
+    @apply bg-background text-foreground font-sans;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
   }
   
@@ -56,11 +56,11 @@
 
 @layer components {
   .dwh-button-primary {
-    @apply bg-dwh-cyan hover:bg-dwh-cyan/90 text-dwh-navy font-medium px-6 py-2 rounded-md transition-all duration-200 hover:shadow-md;
+    @apply bg-dwh-cyan hover:bg-dwh-cyan/90 text-dwh-navy font-medium px-6 py-2 rounded-md transition-all duration-200 hover:shadow-md border-0;
   }
   
   .dwh-button-secondary {
-    @apply bg-dwh-navy hover:bg-dwh-navy/90 text-white font-medium px-6 py-2 rounded-md transition-all duration-200 hover:shadow-md;
+    @apply bg-dwh-navy hover:bg-dwh-navy/90 text-white font-medium px-6 py-2 rounded-md transition-all duration-200 hover:shadow-md border-0;
   }
   
   .dwh-card {
@@ -73,5 +73,23 @@
   
   .dwh-tab-inactive {
     @apply bg-white text-dwh-navy border-gray-300 hover:bg-dwh-light;
+  }
+
+  /* Исправляем стили для списков и выделения */
+  .dwh-list-item {
+    @apply hover:bg-dwh-light/50 transition-colors duration-200;
+  }
+
+  .dwh-list-item-selected {
+    @apply bg-dwh-light border-l-4 border-dwh-cyan;
+  }
+
+  .dwh-button-ghost {
+    @apply text-dwh-navy hover:bg-dwh-light hover:text-dwh-navy transition-colors duration-200;
+  }
+
+  /* Убираем желтые оттенки из focus состояний */
+  .dwh-focus {
+    @apply focus:ring-2 focus:ring-dwh-cyan focus:ring-offset-2 focus:outline-none;
   }
 }

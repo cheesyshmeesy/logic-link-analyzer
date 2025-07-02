@@ -20,10 +20,10 @@ export default {
 		},
 		extend: {
 			colors: {
-				// Corporate colors
-				'dwh-navy': '#023059',
-				'dwh-cyan': '#05C7F2',
-				'dwh-light': '#F2F2F2',
+				// Corporate colors - используем правильные HSL значения
+				'dwh-navy': 'hsl(210, 65%, 18%)', // #023059
+				'dwh-cyan': 'hsl(191, 95%, 47%)', // #05C7F2
+				'dwh-light': 'hsl(0, 0%, 95%)', // #F2F2F2
 				
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
@@ -84,12 +84,18 @@ export default {
 				'pulse-progress': {
 					'0%, 100%': { opacity: '1' },
 					'50%': { opacity: '0.5' }
+				},
+				'error-shake': {
+					'0%, 100%': { transform: 'translateX(0)' },
+					'10%, 30%, 50%, 70%, 90%': { transform: 'translateX(-2px)' },
+					'20%, 40%, 60%, 80%': { transform: 'translateX(2px)' }
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
 				'accordion-up': 'accordion-up 0.2s ease-out',
-				'pulse-progress': 'pulse-progress 2s ease-in-out infinite'
+				'pulse-progress': 'pulse-progress 2s ease-in-out infinite',
+				'error-shake': 'error-shake 0.5s ease-in-out'
 			}
 		}
 	},
