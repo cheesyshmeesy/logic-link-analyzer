@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Database, Download, Plus, Link, Search, Filter, ThumbsUp, ThumbsDown, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import ProgressWithStages from './ProgressWithStages';
 
 const LogicalModel = () => {
   const [selectedDatamart, setSelectedDatamart] = useState('');
@@ -19,6 +20,9 @@ const LogicalModel = () => {
   const [hasResults, setHasResults] = useState(false);
   const [feedback, setFeedback] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [currentStage, setCurrentStage] = useState('');
+  const [stages, setStages] = useState<any[]>([]);
   const { toast } = useToast();
 
   const [entities, setEntities] = useState<any[]>([]);
@@ -38,6 +42,134 @@ const LogicalModel = () => {
     'Слой КХД_3'
   ];
 
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    
+    if (isBuilding) {
+      // Инициализация этапов
+      const initialStages = [
+        {
+          id: 'discovery',
+          name: 'Обнаружение сущностей',
+          description: 'Поиск и идентификация основных сущностей данных',
+          status: 'processing',
+          progress: 0
+        },
+        {
+          id: 'attributes',
+          name: 'Анализ атрибутов',
+          description: 'Определение атрибутов для каждой сущности',
+          status: 'pending',
+          progress: 0
+        },
+        {
+          id: 'relationships',
+          name: 'Построение связей',
+          description: 'Выявление связей между сущностями',
+          status: 'pending',
+          progress: 0
+        },
+        {
+          id: 'validation',
+          name: 'Валидация модели',
+          description: 'Проверка целостности логической модели',
+          status: 'pending',
+          progress: 0
+        }
+      ];
+      
+      setStages(initialStages);
+      setCurrentStage('discovery');
+      setProgress(0);
+
+      let currentProgress = 0;
+      
+      interval = setInterval(() => {
+        currentProgress += 25;
+        setProgress(currentProgress);
+
+        // Обновление этапов каждые 15 секунд
+        const updatedStages = [...initialStages];
+        
+        if (currentProgress <= 25) {
+          updatedStages[0].progress = (currentProgress / 25) * 100;
+          updatedStages[0].status = 'processing';
+          setCurrentStage('discovery');
+        } else if (currentProgress <= 50) {
+          updatedStages[0].status = 'completed';
+          updatedStages[0].progress = 100;
+          updatedStages[1].progress = ((currentProgress - 25) / 25) * 100;
+          updatedStages[1].status = 'processing';
+          setCurrentStage('attributes');
+        } else if (currentProgress <= 75) {
+          updatedStages[0].status = 'completed';
+          updatedStages[0].progress = 100;
+          updatedStages[1].status = 'completed';
+          updatedStages[1].progress = 100;
+          updatedStages[2].progress = ((currentProgress - 50) / 25) * 100;
+          updatedStages[2].status = 'processing';
+          setCurrentStage('relationships');
+        } else if (currentProgress <= 100) {
+          updatedStages[0].status = 'completed';
+          updatedStages[0].progress = 100;
+          updatedStages[1].status = 'completed';
+          updatedStages[1].progress = 100;
+          updatedStages[2].status = 'completed';
+          updatedStages[2].progress = 100;
+          updatedStages[3].progress = ((currentProgress - 75) / 25) * 100;
+          updatedStages[3].status = 'processing';
+          setCurrentStage('validation');
+        }
+        
+        if (currentProgress >= 100) {
+          updatedStages[3].status = 'completed';
+          updatedStages[3].progress = 100;
+          
+          // Завершение процесса
+          // Мок данные для результатов
+          const mockEntities = [
+            { id: 1, name: 'Customer', description: 'Клиенты системы', type: 'Основная', source: selectedDatamart },
+            { id: 2, name: 'Product', description: 'Товары и услуги', type: 'Основная', source: selectedDatamart },
+            { id: 3, name: 'Order', description: 'Заказы клиентов', type: 'Транзакционная', source: selectedDatamart },
+          ];
+
+          const mockAttributes = [
+            { id: 1, entity: 'Customer', attribute: 'customer_id', dataType: 'INTEGER', mandatory: true, keyType: 'PK', description: 'Уникальный идентификатор' },
+            { id: 2, entity: 'Customer', attribute: 'customer_name', dataType: 'VARCHAR(100)', mandatory: true, keyType: '', description: 'Наименование клиента' },
+            { id: 3, entity: 'Product', attribute: 'product_id', dataType: 'INTEGER', mandatory: true, keyType: 'PK', description: 'Уникальный идентификатор' },
+            { id: 4, entity: 'Product', attribute: 'product_name', dataType: 'VARCHAR(200)', mandatory: true, keyType: '', description: 'Наименование товара' },
+            { id: 5, entity: 'Order', attribute: 'order_id', dataType: 'INTEGER', mandatory: true, keyType: 'PK', description: 'Уникальный идентификатор заказа' },
+            { id: 6, entity: 'Order', attribute: 'customer_id', dataType: 'INTEGER', mandatory: true, keyType: 'FK', description: 'Связь с клиентом' },
+          ];
+
+          const mockRelationships = [
+            { id: 1, fromEntity: 'Customer', toEntity: 'Order', relationshipType: 'One-to-Many', sourceAttribute: 'customer_id', targetAttribute: 'customer_id' },
+            { id: 2, fromEntity: 'Product', toEntity: 'Order', relationshipType: 'Many-to-Many', sourceAttribute: 'product_id', targetAttribute: 'product_id' },
+          ];
+
+          setEntities(mockEntities);
+          setAttributes(mockAttributes);
+          setRelationships(mockRelationships);
+          setHasResults(true);
+          setIsBuilding(false);
+          
+          toast({
+            title: "Успех",
+            description: "Логическая модель данных построена",
+          });
+          
+          clearInterval(interval);
+        }
+        
+        setStages(updatedStages);
+      }, 15000); // Обновление каждые 15 секунд
+    }
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isBuilding, selectedDatamart, toast]);
+
   const handleBuildModel = async () => {
     if (!selectedDatamart) {
       toast({
@@ -50,41 +182,6 @@ const LogicalModel = () => {
 
     setIsBuilding(true);
     setHasResults(false);
-    
-    // Симуляция построения модели
-    setTimeout(() => {
-      // Мок данные для результатов
-      const mockEntities = [
-        { id: 1, name: 'Customer', description: 'Клиенты системы', type: 'Основная', source: selectedDatamart },
-        { id: 2, name: 'Product', description: 'Товары и услуги', type: 'Основная', source: selectedDatamart },
-        { id: 3, name: 'Order', description: 'Заказы клиентов', type: 'Транзакционная', source: selectedDatamart },
-      ];
-
-      const mockAttributes = [
-        { id: 1, entity: 'Customer', attribute: 'customer_id', dataType: 'INTEGER', mandatory: true, keyType: 'PK', description: 'Уникальный идентификатор' },
-        { id: 2, entity: 'Customer', attribute: 'customer_name', dataType: 'VARCHAR(100)', mandatory: true, keyType: '', description: 'Наименование клиента' },
-        { id: 3, entity: 'Product', attribute: 'product_id', dataType: 'INTEGER', mandatory: true, keyType: 'PK', description: 'Уникальный идентификатор' },
-        { id: 4, entity: 'Product', attribute: 'product_name', dataType: 'VARCHAR(200)', mandatory: true, keyType: '', description: 'Наименование товара' },
-        { id: 5, entity: 'Order', attribute: 'order_id', dataType: 'INTEGER', mandatory: true, keyType: 'PK', description: 'Уникальный идентификатор заказа' },
-        { id: 6, entity: 'Order', attribute: 'customer_id', dataType: 'INTEGER', mandatory: true, keyType: 'FK', description: 'Связь с клиентом' },
-      ];
-
-      const mockRelationships = [
-        { id: 1, fromEntity: 'Customer', toEntity: 'Order', relationshipType: 'One-to-Many', sourceAttribute: 'customer_id', targetAttribute: 'customer_id' },
-        { id: 2, fromEntity: 'Product', toEntity: 'Order', relationshipType: 'Many-to-Many', sourceAttribute: 'product_id', targetAttribute: 'product_id' },
-      ];
-
-      setEntities(mockEntities);
-      setAttributes(mockAttributes);
-      setRelationships(mockRelationships);
-      setHasResults(true);
-      setIsBuilding(false);
-      
-      toast({
-        title: "Успех",
-        description: "Логическая модель данных построена",
-      });
-    }, 3000);
   };
 
   const handleExport = (type: string) => {
@@ -162,7 +259,7 @@ const LogicalModel = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="space-y-2">
             <label className="text-sm font-medium text-dwh-navy">Витрина данных *</label>
-            <Select value={selectedDatamart} onValueChange={setSelectedDatamart}>
+            <Select value={selectedDatamart} onValueChange={setSelectedDatamart} disabled={isBuilding}>
               <SelectTrigger>
                 <SelectValue placeholder="Выберите витрину..." />
               </SelectTrigger>
@@ -178,7 +275,7 @@ const LogicalModel = () => {
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-dwh-navy">Слой КХД</label>
-            <Select value={selectedLayer} onValueChange={setSelectedLayer}>
+            <Select value={selectedLayer} onValueChange={setSelectedLayer} disabled={isBuilding}>
               <SelectTrigger>
                 <SelectValue placeholder="Выберите слой..." />
               </SelectTrigger>
@@ -211,12 +308,14 @@ const LogicalModel = () => {
         </div>
       </div>
 
-      {/* Loading State */}
+      {/* Progress Section */}
       {isBuilding && (
-        <div className="flex items-center justify-center py-12 border rounded-lg">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-dwh-navy"></div>
-          <span className="ml-3 text-dwh-navy">Анализ структуры данных и построение модели...</span>
-        </div>
+        <ProgressWithStages
+          stages={stages}
+          currentStage={currentStage}
+          overallProgress={progress}
+          title="Построение логической модели данных"
+        />
       )}
 
       {/* Results Section - Always Visible */}
@@ -284,7 +383,6 @@ const LogicalModel = () => {
               )}
             </TabsContent>
 
-            {/* Таблица атрибутов */}
             <TabsContent value="attributes" className="space-y-4">
               <div className="flex justify-between items-center">
                 <div className="flex items-center space-x-2">
@@ -366,7 +464,6 @@ const LogicalModel = () => {
               )}
             </TabsContent>
 
-            {/* Таблица связей */}
             <TabsContent value="relationships" className="space-y-4">
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-semibold text-dwh-navy">Связи между сущностями</h3>
