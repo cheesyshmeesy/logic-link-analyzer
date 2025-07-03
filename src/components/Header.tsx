@@ -9,6 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useNavigate } from 'react-router-dom';
 
 interface HeaderProps {
   onShowRequestTabs?: () => void;
@@ -21,9 +22,13 @@ const Header: React.FC<HeaderProps> = ({
   queueCount = 0, 
   historyCount = 0 
 }) => {
+  const navigate = useNavigate();
+
   const handleLogout = () => {
     console.log('Выход из аккаунта');
-    // Здесь будет логика выхода из системы
+    localStorage.removeItem('isAuthenticated');
+    localStorage.removeItem('userEmail');
+    navigate('/login');
   };
 
   return (
@@ -82,7 +87,7 @@ const Header: React.FC<HeaderProps> = ({
                 onClick={handleLogout}
                 className="flex items-center space-x-2 text-red-600 focus:text-red-600"
               >
-                <LogOut className="w-4 h-4" />
+                <LogOut className="w-4 w-4" />
                 <span>Выйти</span>
               </DropdownMenuItem>
             </DropdownMenuContent>

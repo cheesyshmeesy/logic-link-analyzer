@@ -1,5 +1,5 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
 import Navigation from '@/components/Navigation';
 import AttributeMapping from '@/components/AttributeMapping';
@@ -12,6 +12,15 @@ import { HistoryItem } from '@/components/RequestHistory';
 const Index = () => {
   const [activeTab, setActiveTab] = useState('mapping');
   const [showRequestTabs, setShowRequestTabs] = useState(false);
+  const navigate = useNavigate();
+
+  // Проверка авторизации
+  useEffect(() => {
+    const isAuthenticated = localStorage.getItem('isAuthenticated');
+    if (!isAuthenticated) {
+      navigate('/login');
+    }
+  }, [navigate]);
 
   // Мок данные для системной загруженности
   const mockSystemLoad: SystemLoad = {

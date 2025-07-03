@@ -16,10 +16,10 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  // Мок данные для демонстрации
-  const MOCK_CREDENTIALS = {
-    email: 'admin@company.com',
-    password: 'admin123'
+  // Учетные данные для авторизации
+  const VALID_CREDENTIALS = {
+    username: 'user',
+    password: 'user'
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -34,15 +34,9 @@ const Login = () => {
       return;
     }
 
-    if (!email.includes('@')) {
-      setError('Введите корректный email адрес');
-      setIsLoading(false);
-      return;
-    }
-
     // Имитация запроса к серверу
     setTimeout(() => {
-      if (email === MOCK_CREDENTIALS.email && password === MOCK_CREDENTIALS.password) {
+      if (email === VALID_CREDENTIALS.username && password === VALID_CREDENTIALS.password) {
         // Успешная авторизация
         localStorage.setItem('isAuthenticated', 'true');
         localStorage.setItem('userEmail', email);
@@ -76,11 +70,11 @@ const Login = () => {
             )}
             
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">Логин</Label>
               <Input
                 id="email"
-                type="email"
-                placeholder="admin@company.com"
+                type="text"
+                placeholder="user"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="dwh-focus"
@@ -128,8 +122,8 @@ const Login = () => {
 
           <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
             <p className="text-sm text-blue-800 font-medium mb-2">Демо данные для входа:</p>
-            <p className="text-sm text-blue-700">Email: admin@company.com</p>
-            <p className="text-sm text-blue-700">Пароль: admin123</p>
+            <p className="text-sm text-blue-700">Логин: user</p>
+            <p className="text-sm text-blue-700">Пароль: user</p>
           </div>
         </CardContent>
       </Card>
