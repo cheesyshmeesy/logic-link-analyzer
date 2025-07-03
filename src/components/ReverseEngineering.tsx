@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Search, Download, FileText, Trash2 } from 'lucide-react';
+import { Search, Download, FileText, Trash2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
@@ -17,6 +17,7 @@ const ReverseEngineering = () => {
   const [progress, setProgress] = useState(0);
   const [currentStage, setCurrentStage] = useState('');
   const [stages, setStages] = useState<any[]>([]);
+  const [intervalRef, setIntervalRef] = useState<NodeJS.Timeout | null>(null);
 
   const datamarts = [
     'dm.sales',
@@ -159,6 +160,17 @@ ${requirements ? `\n### 5. Дополнительные требования\n${
     setHasResults(false);
   };
 
+  const handleCancel = () => {
+    if (intervalRef) {
+      clearInterval(intervalRef);
+      setIntervalRef(null);
+    }
+    setIsLoading(false);
+    setProgress(0);
+    setCurrentStage('');
+    setStages([]);
+  };
+
   const handleFeedback = (rating: 'positive' | 'negative', comment?: string) => {
     console.log('Feedback received:', { rating, comment, feature: 'reverse-engineering' });
   };
@@ -237,14 +249,27 @@ ${requirements ? `\n### 5. Дополнительные требования\n${
           />
         </div>
 
-        <Button 
-          onClick={handleGenerateRequirements}
-          disabled={!selectedDatamart || !selectedTemplate || isLoading}
-          className="dwh-button-primary"
-        >
-          <Search className="w-4 h-4 mr-2" />
-          {isLoading ? 'Генерация...' : 'Сгенерировать требования'}
-        </Button>
+        <div className="flex items-center space-x-3">
+          <Button 
+            onClick={handleGenerateRequirements}
+            disabled={!selectedDatamart || !selectedTemplate || isLoading}
+            className="dwh-button-primary"
+          >
+            <Search className="w-4 h-4 mr-2" />
+            {isLoading ? 'Генерация...' : 'Сгенерировать требования'}
+          </Button>
+          
+          {isLoading && (
+            <Button 
+              onClick={handleCancel}
+              variant="outline"
+              className="border-red-500 text-red-600 hover:bg-red-50"
+            >
+              <X className="w-4 h-4 mr-2" />
+              Отменить
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Progress Section */}

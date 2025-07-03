@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { BarChart3, Download, FileSpreadsheet } from 'lucide-react';
+import { BarChart3, Download, FileSpreadsheet, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -15,6 +15,7 @@ const AttributeMapping = () => {
   const [progress, setProgress] = useState(0);
   const [currentStage, setCurrentStage] = useState('');
   const [stages, setStages] = useState<any[]>([]);
+  const [intervalRef, setIntervalRef] = useState<NodeJS.Timeout | null>(null);
 
   const datamarts = [
     'dm.sales',
@@ -151,6 +152,17 @@ const AttributeMapping = () => {
     setHasResults(false);
   };
 
+  const handleCancel = () => {
+    if (intervalRef) {
+      clearInterval(intervalRef);
+      setIntervalRef(null);
+    }
+    setIsLoading(false);
+    setProgress(0);
+    setCurrentStage('');
+    setStages([]);
+  };
+
   const handleFeedback = (rating: 'positive' | 'negative', comment?: string) => {
     console.log('Feedback received:', { rating, comment, feature: 'attribute-mapping' });
   };
@@ -179,14 +191,27 @@ const AttributeMapping = () => {
           </div>
         </div>
 
-        <Button 
-          onClick={handleBuildMapping}
-          disabled={!selectedDatamart || isLoading}
-          className="dwh-button-primary"
-        >
-          <BarChart3 className="w-4 h-4 mr-2" />
-          {isLoading ? 'Построение...' : 'Построить атрибутный маппинг'}
-        </Button>
+        <div className="flex items-center space-x-3">
+          <Button 
+            onClick={handleBuildMapping}
+            disabled={!selectedDatamart || isLoading}
+            className="dwh-button-primary"
+          >
+            <BarChart3 className="w-4 h-4 mr-2" />
+            {isLoading ? 'Построение...' : 'Построить атрибутный маппинг'}
+          </Button>
+          
+          {isLoading && (
+            <Button 
+              onClick={handleCancel}
+              variant="outline"
+              className="border-red-500 text-red-600 hover:bg-red-50"
+            >
+              <X className="w-4 h-4 mr-2" />
+              Отменить
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Progress Section */}

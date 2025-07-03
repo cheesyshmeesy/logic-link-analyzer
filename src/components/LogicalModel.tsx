@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Database, Download, Plus, Link, Search, Filter, ThumbsUp, ThumbsDown, FileText } from 'lucide-react';
+import { Database, Download, Plus, Link, Search, Filter, ThumbsUp, ThumbsDown, FileText, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -23,6 +23,7 @@ const LogicalModel = () => {
   const [progress, setProgress] = useState(0);
   const [currentStage, setCurrentStage] = useState('');
   const [stages, setStages] = useState<any[]>([]);
+  const [intervalRef, setIntervalRef] = useState<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
 
   const [entities, setEntities] = useState<any[]>([]);
@@ -184,6 +185,22 @@ const LogicalModel = () => {
     setHasResults(false);
   };
 
+  const handleCancel = () => {
+    if (intervalRef) {
+      clearInterval(intervalRef);
+      setIntervalRef(null);
+    }
+    setIsBuilding(false);
+    setProgress(0);
+    setCurrentStage('');
+    setStages([]);
+    
+    toast({
+      title: "Процесс отменен",
+      description: "Построение логической модели данных прервано",
+    });
+  };
+
   const handleExport = (type: string) => {
     toast({
       title: "Экспорт",
@@ -289,11 +306,11 @@ const LogicalModel = () => {
             </Select>
           </div>
 
-          <div className="flex items-end">
+          <div className="flex items-end space-x-2">
             <Button 
               onClick={handleBuildModel}
               disabled={!selectedDatamart || isBuilding}
-              className="dwh-button-primary w-full"
+              className="dwh-button-primary flex-1"
             >
               {isBuilding ? (
                 <>Построение...</>
@@ -304,6 +321,16 @@ const LogicalModel = () => {
                 </>
               )}
             </Button>
+            
+            {isBuilding && (
+              <Button 
+                onClick={handleCancel}
+                variant="outline"
+                className="border-red-500 text-red-600 hover:bg-red-50"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            )}
           </div>
         </div>
       </div>
