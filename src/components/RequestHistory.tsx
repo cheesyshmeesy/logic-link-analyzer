@@ -1,10 +1,10 @@
-
 import React, { useState } from 'react';
 import { CheckCircle, XCircle, AlertCircle, Download, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
+import RequestDetails from './RequestDetails';
 
 export interface HistoryItem {
   id: string;
@@ -32,6 +32,7 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
 }) => {
   const [selectedItem, setSelectedItem] = useState<HistoryItem | null>(null);
   const [showRatingDialog, setShowRatingDialog] = useState(false);
+  const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [ratingComment, setRatingComment] = useState('');
   const [ratingType, setRatingType] = useState<'positive' | 'negative'>('positive');
 
@@ -81,7 +82,13 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
 
   const handleRowClick = (item: HistoryItem) => {
     setSelectedItem(item);
+    setShowDetailsDialog(true);
     onViewDetails?.(item.id);
+  };
+
+  const handleCloseDetails = () => {
+    setShowDetailsDialog(false);
+    setSelectedItem(null);
   };
 
   const handleRateClick = (e: React.MouseEvent, item: HistoryItem, rating: 'positive' | 'negative') => {
@@ -203,6 +210,13 @@ const RequestHistory: React.FC<RequestHistoryProps> = ({
           </TableBody>
         </Table>
       </div>
+
+      {/* Request Details Dialog */}
+      <RequestDetails
+        item={selectedItem}
+        isOpen={showDetailsDialog}
+        onClose={handleCloseDetails}
+      />
 
       {/* Rating Dialog */}
       <Dialog open={showRatingDialog} onOpenChange={setShowRatingDialog}>
