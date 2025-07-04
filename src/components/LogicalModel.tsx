@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Database, Download, Plus, Link, Search, Filter, ThumbsUp, ThumbsDown, FileText, X, Trash2 } from 'lucide-react';
+import { Database, Download, Plus, Link, Search, Filter, ThumbsUp, ThumbsDown, FileText, X, Trash2, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -15,6 +15,8 @@ const LogicalModel = () => {
   const [selectedLayer, setSelectedLayer] = useState('');
   const [additionalDatamarts, setAdditionalDatamarts] = useState<string[]>([]);
   const [customRules, setCustomRules] = useState('');
+  const [manualDatamarts, setManualDatamarts] = useState('');
+  const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [entityFilter, setEntityFilter] = useState('');
   const [isBuilding, setIsBuilding] = useState(false);
@@ -243,6 +245,18 @@ const LogicalModel = () => {
     setIsDialogOpen(false);
   };
 
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    const validFiles = files.filter(file => 
+      file.name.endsWith('.docx') || file.name.endsWith('.xlsx')
+    );
+    setAttachedFiles(prev => [...prev, ...validFiles]);
+  };
+
+  const handleRemoveFile = (index: number) => {
+    setAttachedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
   const filteredEntities = entities.filter(entity =>
     entity.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     entity.description.toLowerCase().includes(searchTerm.toLowerCase())
@@ -351,7 +365,7 @@ const LogicalModel = () => {
 
         {/* User Additions Section */}
         <div className="border rounded-lg p-4 bg-gray-50">
-          <h3 className="text-sm font-medium text-dwh-navy mb-3">Дополнительные параметры</h3>
+          <h3 className="text-sm font-medium text-dwh-navy mb-3">Дополнительные требования</h3>
           
           {/* Additional Datamarts */}
           <div className="space-y-3 mb-4">
@@ -402,6 +416,63 @@ const LogicalModel = () => {
                 </Button>
               </div>
             ))}
+          </div>
+
+          {/* Manual Datamarts List */}
+          <div className="space-y-2 mb-4">
+            <label className="block text-sm font-medium text-gray-700">
+              Или укажите витрины вручную (через запятую)
+            </label>
+            <Input
+              placeholder="dm.sales, dm.marketing, dm.finance..."
+              value={manualDatamarts}
+              onChange={(e) => setManualDatamarts(e.target.value)}
+              disabled={isBuilding}
+            />
+          </div>
+
+          {/* File Upload */}
+          <div className="space-y-2 mb-4">
+            <label className="block text-sm font-medium text-gray-700">
+              Прикрепить документы (.docx, .xlsx)
+            </label>
+            <div className="flex items-center space-x-2">
+              <Input
+                type="file"
+                accept=".docx,.xlsx"
+                multiple
+                onChange={handleFileUpload}
+                disabled={isBuilding}
+                className="hidden"
+                id="file-upload"
+              />
+              <label
+                htmlFor="file-upload"
+                className="cursor-pointer inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+              >
+                <Upload className="w-4 h-4 mr-2" />
+                Выбрать файлы
+              </label>
+            </div>
+            {attachedFiles.length > 0 && (
+              <div className="space-y-1">
+                {attachedFiles.map((file, index) => (
+                  <div key={index} className="flex items-center justify-between bg-white p-2 rounded border">
+                    <span className="text-sm text-gray-600">{file.name}</span>
+                    <Button
+                      type="button"
+                      onClick={() => handleRemoveFile(index)}
+                      variant="ghost"
+                      size="sm"
+                      disabled={isBuilding}
+                      className="text-red-600 hover:bg-red-50 p-1"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Custom Rules */}
