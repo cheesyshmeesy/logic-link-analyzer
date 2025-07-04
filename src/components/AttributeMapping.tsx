@@ -1,14 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { BarChart3, Download, FileSpreadsheet, X } from 'lucide-react';
+import { BarChart3, Download, FileSpreadsheet, X, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import ResultFeedback from './ResultFeedback';
 import ProgressWithStages from './ProgressWithStages';
 import CancelConfirmDialog from './CancelConfirmDialog';
 
 const AttributeMapping = () => {
   const [selectedDatamart, setSelectedDatamart] = useState('');
+  const [additionalDatamarts, setAdditionalDatamarts] = useState<string[]>([]);
+  const [customRules, setCustomRules] = useState('');
   const [mappingResults, setMappingResults] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [hasResults, setHasResults] = useState(false);
@@ -148,6 +152,20 @@ const AttributeMapping = () => {
     };
   }, [isLoading]);
 
+  const handleAddDatamart = () => {
+    setAdditionalDatamarts([...additionalDatamarts, '']);
+  };
+
+  const handleRemoveDatamart = (index: number) => {
+    setAdditionalDatamarts(additionalDatamarts.filter((_, i) => i !== index));
+  };
+
+  const handleDatamartChange = (index: number, value: string) => {
+    const updated = [...additionalDatamarts];
+    updated[index] = value;
+    setAdditionalDatamarts(updated);
+  };
+
   const handleBuildMapping = async () => {
     if (!selectedDatamart) return;
     
@@ -181,11 +199,11 @@ const AttributeMapping = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-dwh-navy mb-2">
-              Выберите витрину <span className="text-red-500">*</span>
+              Основная витрина <span className="text-red-500">*</span>
             </label>
             <Select value={selectedDatamart} onValueChange={setSelectedDatamart} disabled={isLoading}>
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Выберите витрину" />
+                <SelectValue placeholder="Выберите основную витрину" />
               </SelectTrigger>
               <SelectContent className="bg-white border border-gray-200 shadow-lg z-50">
                 {datamarts.map((dm) => (
@@ -195,6 +213,76 @@ const AttributeMapping = () => {
                 ))}
               </SelectContent>
             </Select>
+          </div>
+        </div>
+
+        {/* User Additions Section */}
+        <div className="border rounded-lg p-4 bg-gray-50">
+          <h3 className="text-sm font-medium text-dwh-navy mb-3">Дополнительные параметры</h3>
+          
+          {/* Additional Datamarts */}
+          <div className="space-y-3 mb-4">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium text-gray-700">
+                Дополнительные витрины для анализа
+              </label>
+              <Button
+                type="button"
+                onClick={handleAddDatamart}
+                variant="outline"
+                size="sm"
+                disabled={isLoading}
+                className="text-dwh-navy border-dwh-navy hover:bg-dwh-light"
+              >
+                <Plus className="w-4 h-4 mr-1" />
+                Добавить
+              </Button>
+            </div>
+            
+            {additionalDatamarts.map((datamart, index) => (
+              <div key={index} className="flex items-center space-x-2">
+                <Select
+                  value={datamart}
+                  onValueChange={(value) => handleDatamartChange(index, value)}
+                  disabled={isLoading}
+                >
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="Выберите витрину..." />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white border border-gray-200 shadow-lg z-50">
+                    {datamarts.filter(dm => dm !== selectedDatamart && !additionalDatamarts.includes(dm)).map((dm) => (
+                      <SelectItem key={dm} value={dm} className="hover:bg-dwh-light">
+                        {dm}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  type="button"
+                  onClick={() => handleRemoveDatamart(index)}
+                  variant="outline"
+                  size="sm"
+                  disabled={isLoading}
+                  className="text-red-600 border-red-300 hover:bg-red-50"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </div>
+            ))}
+          </div>
+
+          {/* Custom Rules */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Дополнительные правила маппинга
+            </label>
+            <Textarea
+              placeholder="Укажите специфические правила или ограничения для маппинга атрибутов..."
+              value={customRules}
+              onChange={(e) => setCustomRules(e.target.value)}
+              className="min-h-[80px]"
+              disabled={isLoading}
+            />
           </div>
         </div>
 

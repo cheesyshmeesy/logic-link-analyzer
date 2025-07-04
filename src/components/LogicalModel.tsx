@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
-import { Database, Download, Plus, Link, Search, Filter, ThumbsUp, ThumbsDown, FileText, X } from 'lucide-react';
+import { Database, Download, Plus, Link, Search, Filter, ThumbsUp, ThumbsDown, FileText, X, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -14,6 +13,8 @@ import ProgressWithStages from './ProgressWithStages';
 const LogicalModel = () => {
   const [selectedDatamart, setSelectedDatamart] = useState('');
   const [selectedLayer, setSelectedLayer] = useState('');
+  const [additionalDatamarts, setAdditionalDatamarts] = useState<string[]>([]);
+  const [customRules, setCustomRules] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [entityFilter, setEntityFilter] = useState('');
   const [isBuilding, setIsBuilding] = useState(false);
@@ -171,11 +172,25 @@ const LogicalModel = () => {
     };
   }, [isBuilding, selectedDatamart, toast]);
 
+  const handleAddDatamart = () => {
+    setAdditionalDatamarts([...additionalDatamarts, '']);
+  };
+
+  const handleRemoveDatamart = (index: number) => {
+    setAdditionalDatamarts(additionalDatamarts.filter((_, i) => i !== index));
+  };
+
+  const handleDatamartChange = (index: number, value: string) => {
+    const updated = [...additionalDatamarts];
+    updated[index] = value;
+    setAdditionalDatamarts(updated);
+  };
+
   const handleBuildModel = async () => {
     if (!selectedDatamart) {
       toast({
         title: "Ошибка",
-        description: "Выберите витрину данных",
+        description: "Выберите основную витрину данных",
         variant: "destructive"
       });
       return;
@@ -251,11 +266,11 @@ const LogicalModel = () => {
       <div className="text-left max-w-sm mx-auto space-y-2 text-sm text-gray-600">
         <div className="flex items-start space-x-2">
           <span className="flex-shrink-0 w-5 h-5 bg-dwh-navy text-white rounded-full flex items-center justify-center text-xs font-bold">1</span>
-          <span>Выберите витрину данных из списка</span>
+          <span>Выберите основную витрину данных из списка</span>
         </div>
         <div className="flex items-start space-x-2">
           <span className="flex-shrink-0 w-5 h-5 bg-dwh-navy text-white rounded-full flex items-center justify-center text-xs font-bold">2</span>
-          <span>При необходимости укажите слой КХД</span>
+          <span>При необходимости укажите слой КХД и дополнительные параметры</span>
         </div>
         <div className="flex items-start space-x-2">
           <span className="flex-shrink-0 w-5 h-5 bg-dwh-navy text-white rounded-full flex items-center justify-center text-xs font-bold">3</span>
@@ -275,10 +290,10 @@ const LogicalModel = () => {
       <div className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-dwh-navy">Витрина данных *</label>
+            <label className="text-sm font-medium text-dwh-navy">Основная витрина данных *</label>
             <Select value={selectedDatamart} onValueChange={setSelectedDatamart} disabled={isBuilding}>
               <SelectTrigger>
-                <SelectValue placeholder="Выберите витрину..." />
+                <SelectValue placeholder="Выберите основную витрину..." />
               </SelectTrigger>
               <SelectContent className="bg-white border border-gray-200 shadow-lg z-50">
                 {datamarts.map((datamart) => (
@@ -331,6 +346,76 @@ const LogicalModel = () => {
                 <X className="w-4 h-4" />
               </Button>
             )}
+          </div>
+        </div>
+
+        {/* User Additions Section */}
+        <div className="border rounded-lg p-4 bg-gray-50">
+          <h3 className="text-sm font-medium text-dwh-navy mb-3">Дополнительные параметры</h3>
+          
+          {/* Additional Datamarts */}
+          <div className="space-y-3 mb-4">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium text-gray-700">
+                Дополнительные витрины для анализа
+              </label>
+              <Button
+                type="button"
+                onClick={handleAddDatamart}
+                variant="outline"
+                size="sm"
+                disabled={isBuilding}
+                className="text-dwh-navy border-dwh-navy hover:bg-dwh-light"
+              >
+                <Plus className="w-4 h-4 mr-1" />
+                Добавить
+              </Button>
+            </div>
+            
+            {additionalDatamarts.map((datamart, index) => (
+              <div key={index} className="flex items-center space-x-2">
+                <Select
+                  value={datamart}
+                  onValueChange={(value) => handleDatamartChange(index, value)}
+                  disabled={isBuilding}
+                >
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="Выберите витрину..." />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white border border-gray-200 shadow-lg z-50">
+                    {datamarts.filter(dm => dm !== selectedDatamart && !additionalDatamarts.includes(dm)).map((dm) => (
+                      <SelectItem key={dm} value={dm} className="hover:bg-dwh-light">
+                        {dm}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  type="button"
+                  onClick={() => handleRemoveDatamart(index)}
+                  variant="outline"
+                  size="sm"
+                  disabled={isBuilding}
+                  className="text-red-600 border-red-300 hover:bg-red-50"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </div>
+            ))}
+          </div>
+
+          {/* Custom Rules */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Специфические правила построения модели
+            </label>
+            <Textarea
+              placeholder="Укажите особые требования к построению логической модели данных..."
+              value={customRules}
+              onChange={(e) => setCustomRules(e.target.value)}
+              className="min-h-[80px]"
+              disabled={isBuilding}
+            />
           </div>
         </div>
       </div>
