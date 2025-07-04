@@ -13,9 +13,7 @@ import ProgressWithStages from './ProgressWithStages';
 const LogicalModel = () => {
   const [selectedDatamart, setSelectedDatamart] = useState('');
   const [selectedLayer, setSelectedLayer] = useState('');
-  const [additionalDatamarts, setAdditionalDatamarts] = useState<string[]>([]);
-  const [customRules, setCustomRules] = useState('');
-  const [manualDatamarts, setManualDatamarts] = useState('');
+  const [additionalRequirements, setAdditionalRequirements] = useState('');
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [entityFilter, setEntityFilter] = useState('');
@@ -37,7 +35,8 @@ const LogicalModel = () => {
     'dm.sales',
     'dm.marketing',
     'dm.finance',
-    'dm.operations'
+    'dm.operations',
+    'Ручной список'
   ];
 
   const layers = [
@@ -363,76 +362,26 @@ const LogicalModel = () => {
           </div>
         </div>
 
-        {/* User Additions Section */}
+        {/* Additional Requirements Section */}
         <div className="border rounded-lg p-4 bg-gray-50">
           <h3 className="text-sm font-medium text-dwh-navy mb-3">Дополнительные требования</h3>
           
-          {/* Additional Datamarts */}
-          <div className="space-y-3 mb-4">
-            <div className="flex items-center justify-between">
-              <label className="text-sm font-medium text-gray-700">
-                Дополнительные витрины для анализа
-              </label>
-              <Button
-                type="button"
-                onClick={handleAddDatamart}
-                variant="outline"
-                size="sm"
-                disabled={isBuilding}
-                className="text-dwh-navy border-dwh-navy hover:bg-dwh-light"
-              >
-                <Plus className="w-4 h-4 mr-1" />
-                Добавить
-              </Button>
-            </div>
-            
-            {additionalDatamarts.map((datamart, index) => (
-              <div key={index} className="flex items-center space-x-2">
-                <Select
-                  value={datamart}
-                  onValueChange={(value) => handleDatamartChange(index, value)}
-                  disabled={isBuilding}
-                >
-                  <SelectTrigger className="flex-1">
-                    <SelectValue placeholder="Выберите витрину..." />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white border border-gray-200 shadow-lg z-50">
-                    {datamarts.filter(dm => dm !== selectedDatamart && !additionalDatamarts.includes(dm)).map((dm) => (
-                      <SelectItem key={dm} value={dm} className="hover:bg-dwh-light">
-                        {dm}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button
-                  type="button"
-                  onClick={() => handleRemoveDatamart(index)}
-                  variant="outline"
-                  size="sm"
-                  disabled={isBuilding}
-                  className="text-red-600 border-red-300 hover:bg-red-50"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </div>
-            ))}
-          </div>
-
-          {/* Manual Datamarts List */}
+          {/* Text Input */}
           <div className="space-y-2 mb-4">
             <label className="block text-sm font-medium text-gray-700">
-              Или укажите витрины вручную (через запятую)
+              Дополнительные правила и витрины для анализа
             </label>
-            <Input
-              placeholder="dm.sales, dm.marketing, dm.finance..."
-              value={manualDatamarts}
-              onChange={(e) => setManualDatamarts(e.target.value)}
+            <Textarea
+              placeholder="Укажите дополнительные витрины (dm.sales, dm.marketing), специфические правила построения модели или другие требования..."
+              value={additionalRequirements}
+              onChange={(e) => setAdditionalRequirements(e.target.value)}
+              className="min-h-[100px]"
               disabled={isBuilding}
             />
           </div>
 
           {/* File Upload */}
-          <div className="space-y-2 mb-4">
+          <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-700">
               Прикрепить документы (.docx, .xlsx)
             </label>
@@ -473,20 +422,6 @@ const LogicalModel = () => {
                 ))}
               </div>
             )}
-          </div>
-
-          {/* Custom Rules */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Специфические правила построения модели
-            </label>
-            <Textarea
-              placeholder="Укажите особые требования к построению логической модели данных..."
-              value={customRules}
-              onChange={(e) => setCustomRules(e.target.value)}
-              className="min-h-[80px]"
-              disabled={isBuilding}
-            />
           </div>
         </div>
       </div>
