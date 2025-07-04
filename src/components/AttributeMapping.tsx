@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { BarChart3, Download, FileSpreadsheet, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -6,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import ResultFeedback from './ResultFeedback';
 import ProgressWithStages from './ProgressWithStages';
+import CancelConfirmDialog from './CancelConfirmDialog';
 
 const AttributeMapping = () => {
   const [selectedDatamart, setSelectedDatamart] = useState('');
@@ -16,6 +16,7 @@ const AttributeMapping = () => {
   const [currentStage, setCurrentStage] = useState('');
   const [stages, setStages] = useState<any[]>([]);
   const [intervalRef, setIntervalRef] = useState<NodeJS.Timeout | null>(null);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
 
   const datamarts = [
     'dm.sales',
@@ -138,6 +139,8 @@ const AttributeMapping = () => {
         
         setStages(updatedStages);
       }, 15000); // Обновление каждые 15 секунд
+      
+      setIntervalRef(interval);
     }
 
     return () => {
@@ -152,7 +155,11 @@ const AttributeMapping = () => {
     setHasResults(false);
   };
 
-  const handleCancel = () => {
+  const handleCancelClick = () => {
+    setShowCancelDialog(true);
+  };
+
+  const handleCancelConfirm = () => {
     if (intervalRef) {
       clearInterval(intervalRef);
       setIntervalRef(null);
@@ -203,7 +210,7 @@ const AttributeMapping = () => {
           
           {isLoading && (
             <Button 
-              onClick={handleCancel}
+              onClick={handleCancelClick}
               variant="outline"
               className="border-red-500 text-red-600 hover:bg-red-50"
             >
@@ -290,6 +297,15 @@ const AttributeMapping = () => {
           )}
         </div>
       )}
+
+      {/* Cancel Confirmation Dialog */}
+      <CancelConfirmDialog
+        isOpen={showCancelDialog}
+        onClose={() => setShowCancelDialog(false)}
+        onConfirm={handleCancelConfirm}
+        title="построение атрибутного маппинга"
+        description="Текущий прогресс анализа будет потерян, и вам потребуется начать заново."
+      />
     </div>
   );
 };
